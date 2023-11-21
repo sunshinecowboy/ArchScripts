@@ -1,86 +1,90 @@
 #!/bin/bash
 
-##if not root, run as root
+# Check if running as root, if not, advise to run as root and exit
 if (( $EUID != 0 )); then
-        sudo /bin/echo "Try Running As Root!"
-                exit
-                fi
-       /usr/bin/echo 'Establishing log directory at /var/log/pacman-auto-update' ;
-       /usr/bin/echo '                      ' ;
-                /usr/bin/mkdir /var/log/pacman-auto-update ;
+    echo "This script must be run as root. Try running with 'sudo'."
+        exit 1
+        fi
 
-                /usr/bin/touch /usr/bin/autopac ;
+        # Function to get user input with a default value
+        get_input() {
+            local prompt default_value
+                prompt=$1
+                    default_value=$2
 
-                #Update script ;
+                        # Display prompt and read user input, use default if no input is given
+                            read -p "$prompt [$default_value]: " input
+                                echo "${input:-$default_value}"
+                                }
 
-                /usr/bin/pacman -Syyu --noconfirm ;
+                                # User-configurable variables with defaults
+                                LOGDIR=$(get_input "Enter the directory for storing logs" "/var/log/pacman-auto-update")
+                                BOOT_TIME=$(get_input "Enter the time after boot to run the update (e.g., 5min, 10min)" "5min")
+                                UPDATE_FREQ=$(get_input "Enter the frequency of updates (e.g., 24h, 12h)" "24h")
 
-                /usr/bin/pacman -Sc --noconfirm ;
-            	
-		##The below script creates /usr/bin/autopac
-  
-	/usr/bin/echo 'Creating autopac executable at /usr/bin/autopac' ;
- 	/usr/bin/echo '                      ' ;
-                
-		/usr/bin/echo '#!/bin/bash
-                #if not root, run as root
-                if (( $EUID != 0 )); then
-                        sudo /bin/echo "Try Running As Root!"
-                                exit
-                                fi
+                                # Create log directory
+                                echo "Establishing log directory at $LOGDIR"
+                                mkdir -p "$LOGDIR" || { echo "Failed to create log directory"; exit 1; }
 
-                                ##Set log file variables
-                                export TIMESTAMP=$(date +'%Y_%m_%d--%H-%M-%S')
-                                export LOGDIR=/var/log/pacman-auto-update
-                                export LOGFILE=${LOGDIR}/update_${TIMESTAMP}.log
+                                # Create and configure autopac script
+                                AUTOPAC="/usr/bin/autopac"
+                                echo "Creating autopac executable at $AUTOPAC"
 
-                                ##Update script
-                                {
+                                cat <<EOF > "$AUTOPAC"
+                                #!/bin/bash
+                                # Auto-update script
 
-                                /usr/bin/pacman -Syyu --noconfirm ;
+                                # Ensure running as root
+                                if (( \$EUID != 0 )); then
+                                    echo "This script must be run as root."
+                                        exit 1
+                                        fi
 
-                                /usr/bin/pacman -Sc --noconfirm ;
+                                        # Log file setup
+                                        TIMESTAMP=\$(date +'%Y_%m_%d--%H-%M-%S')
+                                        LOGFILE=${LOGDIR}/update_\$TIMESTAMP.log
 
+                                        # Update commands
+                                        {
+                                            /usr/bin/pacman -Syyu --noconfirm
+                                                /usr/bin/pacman -Sc --noconfirm
+                                                } | tee "\$LOGFILE"
 
-                                } | tee ${LOGFILE} ; #Redirect all script output to the log file
-
-                                echo '                      ' ;
-
-                                echo 'Update Complete!' ;
-
-                                exit 0' >> /usr/bin/autopac && /usr/bin/chmod +x /usr/bin/autopac ; ##Completion of /usr/bin/autoapt, making it executable
-
-/usr/bin/echo 'Creating and enabling systemd timer to run 5 minutes after system boot and every 24 hours thereafter......' ;
- /usr/bin/echo '                      ' ;
-
-##Create Systemd timer to run automatically 5 mins after system boot and every 24 hours thereafter 
-/usr/bin/touch /etc/systemd/system/autopac.service ;
-/usr/bin/touch /etc/systemd/system/autopac.timer ;
-
-/usr/bin/echo '[Unit]
-Description="Run autopac.service 5min after boot and every 24 hours relative to activation time"
-
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=24h
-OnCalendar=Mon..Fri *-*-* 10:00:*
-Unit=autopac.service
+                                                echo "Update Complete!"
+EOF
 
 
-[Install]
-WantedBy=multi-user.target' >> /etc/systemd/system/autopac.timer ;
+                               chmod +x "$AUTOPAC" || { echo "Failed to set permissions on autopac"; exit 1; }
 
-/usr/bin/echo '[Unit]
-Description="Auto Pacman update Script"
+                                                # Create and enable systemd service and timer
+                                                SERVICE_FILE="/etc/systemd/system/autopac.service"
+                                                TIMER_FILE="/etc/systemd/system/autopac.timer"
 
-[Service]
-ExecStart=/usr/bin/autopac' >> /etc/systemd/system/autopac.service ;
+                                                echo "Creating and enabling systemd timer for scheduled updates..."
 
-##Enable and start autopac timer
-				
-/usr/bin/systemctl start autopac.timer ;
-/usr/bin/systemctl enable autopac.timer ;
+                                                # Service file
+                                                cat <<EOF > "$SERVICE_FILE"
+                                                [Unit]
+                                                Description=Auto Pacman Update Script
 
-                               
-                        
-echo 'Installation Complete!' ;
+                                                [Service]
+                                                ExecStart=$AUTOPAC
+EOF
+
+                                                # Timer file
+                                                cat <<EOF > "$TIMER_FILE"
+                                                [Unit]
+                                                Description=Run autopac.service $BOOT_TIME after boot and every $UPDATE_FREQ relative to activation time
+
+                                                [Timer]
+                                                OnBootSec=$BOOT_TIME
+                                                OnUnitActiveSec=$UPDATE_FREQ
+
+                                                [Install]
+                                                WantedBy=multi-user.target
+EOF
+
+                                                # Enable and start the timer
+                                                systemctl start autopac.timer && systemctl enable autopac.timer || { echo "Failed to start or enable the timer"; exit 1; }
+
+                                                echo "Installation Complete! Autopac will run $BOOT_TIME after boot and every $UPDATE_FREQ."						
