@@ -11,14 +11,12 @@ if (( $EUID != 0 )); then
 
                 /usr/bin/touch /usr/bin/autopac ;
 
-                #Update script, and install cronie ;
+                #Update script ;
 
                 /usr/bin/pacman -Syyu --noconfirm ;
 
                 /usr/bin/pacman -Sc --noconfirm ;
-
-                /usr/bin/pacman -S cronie --noconfirm ;
-		
+            	
 		##The below script creates /usr/bin/autopac
   
 	/usr/bin/echo 'Creating autopac executable at /usr/bin/autopac' ;
@@ -51,16 +49,38 @@ if (( $EUID != 0 )); then
                                 echo 'Update Complete!' ;
 
                                 exit 0' >> /usr/bin/autopac && /usr/bin/chmod +x /usr/bin/autopac ; ##Completion of /usr/bin/autoapt, making it executable
-        /usr/bin/echo 'Starting Cronie Service......' ;
- 	/usr/bin/echo '                      ' ;
-				##Enable and start Cronie
-				/usr/bin/systemctl enable cronie.service ;
-                                /usr/bin/systemctl start cronie.service ;
-	/usr/bin/echo 'Creating symbolic link from vim to vi......' ;
- 	/usr/bin/echo '                      ' ;
-                                /usr/bin/ln -s /usr/bin/vim /usr/bin/vi ; ## Creates a symbolic link for vim to vi. Cronie often has issues with using vim. Feel free to remove this line if you like and use vi.
-	/usr/bin/echo 'Creating cronjob to run autopac automatically everyday at 4:00 am. To change this time edit your crontab by executing crontab -e ' ;
- 	/usr/bin/echo '                      ' ;
-                                (crontab -l 2>/dev/null; echo "0 4 * * * /usr/bin/autopac") | crontab - ; ##This line sets the frequency to run autoapt in crontab. Feel free to change this to your preference
+
+/usr/bin/echo 'Creating and enabling systemd timer to run 5 minutes after system boot and every 24 hours thereafter......' ;
+ /usr/bin/echo '                      ' ;
+
+##Create Systemd timer to run automatically 5 mins after system boot and every 24 hours thereafter 
+/usr/bin/touch /etc/systemd/system/autopac.service ;
+/usr/bin/touch /etc/systemd/system/autopac.timer ;
+
+/usr/bin/echo '[Unit]
+Description="Run autopac.service 5min after boot and every 24 hours relative to activation time"
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=24h
+OnCalendar=Mon..Fri *-*-* 10:00:*
+Unit=autopac.service
+
+
+[Install]
+WantedBy=multi-user.target' >> /etc/systemd/system/autopac.timer ;
+
+/usr/bin/echo '[Unit]
+Description="Auto Pacman update Script"
+
+[Service]
+ExecStart=/usr/bin/autopac' >> /etc/systemd/system/autopac.service ;
+
+##Enable and start autopac timer
+				
+/usr/bin/systemctl start autopac.timer ;
+/usr/bin/systemctl enable autopac.timer ;
+
+                               
                         
-echo 'Installation Complete. Please check your Crontab and make sure timing is acceptable for your setup!' ;
+echo 'Installation Complete!' ;
