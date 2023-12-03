@@ -218,5 +218,3 @@ systemctl start fail2ban
 systemctl restart tor
 
 echo "Complete! Your hardened tor server is up and running! To view it's performace type nyx -i 127.0.0.1:$ControlPort and enter your password!"
-
-
