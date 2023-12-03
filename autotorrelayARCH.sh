@@ -9,8 +9,8 @@ fi
 echo "Updating system and installing necessary packages........."
 
 # Update the system and install necessary packages
-Pacman -Syu --noconfirm
-Pacman -S ufw tor nyx fail2ban rsyslog --noconfirm
+pacman -Syu --noconfirm
+pacman -S ufw tor nyx fail2ban rsyslog --noconfirm
 
 # Prompt for necessary variables with default values
 get_input_with_default() {
@@ -200,7 +200,7 @@ cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local
 cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
 # Set Permissions for tor
-chown -R debian-tor:debian-tor /var/lib/tor
+chown -R tor:tor /var/lib/tor
 
 echo "Starting system services............"
 
