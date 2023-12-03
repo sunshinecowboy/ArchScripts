@@ -15,7 +15,7 @@ pacman -S ufw tor nyx fail2ban --noconfirm
 # Prompt for necessary variables with default values
 get_input_with_default() {
     local prompt=$1
-    local default=$3
+    local default=$2
     read -p "$prompt [$default]: " input
     echo "${input:-$default}"
 }
@@ -67,11 +67,6 @@ setup_cookie_authentication() {
     # Configure Tor to use cookie authentication
     echo "CookieAuthentication 1" >> $torrc_config
     echo "DisableDebuggerAttachment 0" >> $torrc_config
-
-    # Set appropriate permissions for the cookie file
-    cookie_file="/var/lib/tor/control_auth_cookie"
-    chown $(whoami):$(whoami) $cookie_file
-    chmod 0600 $cookie_file
 }
 
 # Prompt for authentication method
@@ -129,7 +124,7 @@ configure_sshd_settings() {
     /^#?PermitRootLogin/ { print "PermitRootLogin " permit_root_login; next }
     { print }
     ' "$sshd_config" > "$temp_file" && mv "$temp_file" "$sshd_config"
-    
+
     # Restart the SSH service to apply changes
     systemctl restart sshd
 }
@@ -212,3 +207,6 @@ systemctl start fail2ban
 systemctl restart tor
 
 echo "Complete! Your hardened tor server is up and running! To view it's performace type nyx -i 127.0.0.1:$ControlPort and enter your password!"
+
+
+                                                                         
