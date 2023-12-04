@@ -48,8 +48,9 @@ echo "Creating Tor Relay config file at /etc/tor/torrc........."
 } > /etc/tor/torrc
 
 # Function to choose authentication method
-local torrc_config="/etc/tor/torrc"
+
 choose_authentication_method() {
+    local torrc_config="/etc/tor/torrc"
     echo "Choose the authentication method for Tor Control Port:"
     echo "1. Password Authentication"
     echo "2. Cookie Authentication"
