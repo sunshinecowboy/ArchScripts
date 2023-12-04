@@ -30,7 +30,25 @@ ContactInfo=$(get_input_with_default "Enter Contact Info (email)" "user@example.
 RelayBandwidthRate=$(get_input_with_default "Enter Relay Bandwidth Rate" "500 KB")
 RelayBandwidthBurst=$(get_input_with_default "Enter Relay Bandwidth Burst" "1000 KB")
 
+echo "Creating Tor Relay config file at /etc/tor/torrc........."
+
+# Create the /etc/tor/torrc
+{
+  echo User tor
+  echo Log notice syslog
+  echo DataDirectory /var/lib/tor
+  echo ControlPort $ControlPort
+  echo ORPort $ORPort
+  echo DirPort $DirPort
+  echo Nickname $TorNickname
+  echo ContactInfo $ContactInfo
+  echo RelayBandwidthRate $RelayBandwidthRate
+  echo RelayBandwidthBurst $RelayBandwidthBurst
+  echo ExitRelay 0
+} > /etc/tor/torrc
+
 # Function to choose authentication method
+local torrc_config="/etc/tor/torrc"
 choose_authentication_method() {
     echo "Choose the authentication method for Tor Control Port:"
     echo "1. Password Authentication"
@@ -71,6 +89,7 @@ setup_cookie_authentication() {
 
 # Prompt for authentication method
 choose_authentication_method
+
 echo "Setting up and enabling firewall........"
 
 # Set up and enable UFW
@@ -83,24 +102,6 @@ ufw allow $SocksPort/tcp
 fi
 ufw enable
 setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/tor
-
-echo "Creating Tor Relay config file at /etc/tor/torrc........."
-
-# Create the /etc/tor/torrc
-{
-  echo User tor
-  echo Log notice syslog
-  echo DataDirectory /var/lib/tor
-  echo ControlPort $ControlPort
-  echo ORPort $ORPort
-  echo DirPort $DirPort
-  echo Nickname $TorNickname
-  echo ContactInfo $ContactInfo
-  echo RelayBandwidthRate $RelayBandwidthRate
-  echo RelayBandwidthBurst $RelayBandwidthBurst
-  echo HashedControlPassword $HashedControlPassword
-  echo ExitRelay 0
-} > /etc/tor/torrc
 
 echo "We now need to set up the SSHD and its fail2ban jail......."
 
