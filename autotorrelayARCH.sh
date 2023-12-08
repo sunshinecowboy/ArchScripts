@@ -9,6 +9,8 @@ fi
 echo "Updating system and installing necessary packages..."
 
 # Update the system and install necessary packages
+pacman-key --init
+pacman-key --populate
 pacman -Syu --noconfirm
 if [ $? -ne 0 ]; then
     echo "Failed to update system."
