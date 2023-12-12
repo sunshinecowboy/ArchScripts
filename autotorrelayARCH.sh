@@ -67,7 +67,7 @@ case $authentication_choice in
           set $CookieAuthentication="1" ;;
     *)
         echo "Invalid choice. Exiting."
-        exit 1
+                exit 1
         ;;
 esac
 
@@ -78,7 +78,7 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow $SSHPORT/tcp
 ufw allow $ORPort/tcp
-if [ "$SocksPort" != 0 ]; 
+if [ "$SocksPort" != 0 ];
 then
 ufw allow $SocksPort/tcp
 fi
@@ -89,7 +89,7 @@ echo "Creating Tor Relay config file at /etc/tor/torrc........."
 
 # Create the /etc/tor/torrc
 {
-  echo User debian-tor 
+  echo User debian-tor
   echo Log notice syslog
   echo DataDirectory /var/lib/tor
   echo ControlPort $ControlPort
@@ -99,7 +99,7 @@ echo "Creating Tor Relay config file at /etc/tor/torrc........."
   echo ContactInfo $ContactInfo
   echo RelayBandwidthRate $RelayBandwidthRate
   echo RelayBandwidthBurst $RelayBandwidthBurst
-  if [ "$authentication_choice" = "1" ] 
+  if [ "$authentication_choice" = "1" ]
   then
   echo HashedControlPassword $HashedControlPassword
   else echo CookieAuthentication 1
@@ -129,8 +129,7 @@ configure_sshd_settings() {
     /^#?PermitRootLogin/ { print "PermitRootLogin " permit_root_login; next }
     { print }
     ' "$sshd_config" > "$temp_file" && mv "$temp_file" "$sshd_config"
-
-    # Restart the SSH service to apply changes
+ # Restart the SSH service to apply changes
     systemctl restart sshd
 }
 
@@ -143,7 +142,7 @@ configure_sshd_in_jail_conf() {
     local temp_file=$(mktemp)
 
     # Get user inputs with defaults
-    local ignoreip=$(get_input_with_default "Enter ignoreip" "127.0.0.1")    
+    local ignoreip=$(get_input_with_default "Enter ignoreip" "127.0.0.1")
     local maxretry=$(get_input_with_default "Enter maxretry" "5")
     local findtime=$(get_input_with_default "Enter findtime (e.g., 1w)" "1w")
     local bantime=$(get_input_with_default "Enter bantime (e.g., 52w)" "52w")
@@ -194,7 +193,6 @@ configure_fail2ban_settings() {
 
 # Call the function
 configure_fail2ban_settings
-
 #Copy fail2ban config files to *.local files
 cp /etc/fail2ban/fail2ban.conf /etc/fail2ban/fail2ban.local
 cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
@@ -218,4 +216,5 @@ then
 echo "Complete! Your hardened tor server is up and running! To view it's performace type nyx -i 127.0.0.1:$ControlPort and enter your password!"
 else
 echo "Complete! Your hardened tor server is up and running! To view it's performace type nyx -i 127.0.0.1:$ControlPort !"
-fi
+fi                                                      
+                                                                                           
